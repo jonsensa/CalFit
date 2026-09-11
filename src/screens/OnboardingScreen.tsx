@@ -14,26 +14,35 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { saveUserProfile } from '../storage/userProfileStorage';
 import {
   ACTIVITY_LEVELS,
+  GOALS,
+  calculateGoalTarget,
   calculateHealthMetrics,
   type ActivityLevel,
+  type Goal,
+  type ProfileStats,
   type Sex,
   type UserProfile,
 } from '../types/userProfile';
 
 type OnboardingScreenProps = {
+  initialProfile: ProfileStats | null;
   onProfileSaved: (profile: UserProfile) => void;
 };
 
-export function OnboardingScreen({ onProfileSaved }: OnboardingScreenProps) {
-  const [age, setAge] = useState('');
-  const [heightCm, setHeightCm] = useState('');
-  const [weightKg, setWeightKg] = useState('');
-  const [sex, setSex] = useState<Sex>('male');
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
+export function OnboardingScreen({ initialProfile, onProfileSaved }: OnboardingScreenProps) {
+  const [age, setAge] = useState(initialProfile?.age.toString() ?? '');
+  const [heightCm, setHeightCm] = useState(initialProfile?.heightCm.toString() ?? '');
+  const [weightKg, setWeightKg] = useState(initialProfile?.weightKg.toString() ?? '');
+  const [sex, setSex] = useState<Sex>(initialProfile?.sex ?? 'male');
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
+    initialProfile?.activityLevel ?? 'moderate',
+  );
+  const [stats, setStats] = useState<ProfileStats | null>(initialProfile);
+  const [goal, setGoal] = useState<Goal | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  async function handleContinue() {
+  function handleContinue() {
     const parsedAge = Number(age);
     const parsedHeight = Number(heightCm.replace(',', '.'));
     const parsedWeight = Number(weightKg.replace(',', '.'));
@@ -58,7 +67,7 @@ export function OnboardingScreen({ onProfileSaved }: OnboardingScreenProps) {
       sex,
       activityLevel,
     });
-    const profile: UserProfile = {
+    const profile: ProfileStats = {
       age: parsedAge,
       heightCm: parsedHeight,
       weightKg: parsedWeight,
@@ -67,6 +76,16 @@ export function OnboardingScreen({ onProfileSaved }: OnboardingScreenProps) {
       ...results,
     };
 
+    setStats(profile);
+    setErrorMessage('');
+  }
+
+  async function handleSaveGoal() {
+    if (!stats || !goal || isSaving) return;
+    const profile: UserProfile = {
+      ...stats,
+      ...calculateGoalTarget(stats.maintenanceCalories, goal),
+    };
     setErrorMessage('');
     setIsSaving(true);
     try {
@@ -78,6 +97,70 @@ export function OnboardingScreen({ onProfileSaved }: OnboardingScreenProps) {
     }
   }
 
+  if (stats) {
+    const target = goal ? calculateGoalTarget(stats.maintenanceCalories, goal) : null;
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.eyebrow}>CALFIT · STEP 2 OF 2</Text>
+          <Text style={styles.title}>Choose your goal</Text>
+          <Text style={styles.subtitle}>
+            Your estimated maintenance is {stats.maintenanceCalories} kcal/day. Choose how you want
+            to track.
+          </Text>
+          <View style={styles.activityList}>
+            {GOALS.map((option) => (
+              <Pressable
+                key={option.value}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: goal === option.value, disabled: isSaving }}
+                disabled={isSaving}
+                onPress={() => setGoal(option.value)}
+                style={[
+                  styles.activityButton,
+                  goal === option.value && styles.selectedActivityButton,
+                ]}
+              >
+                <View style={styles.activityText}>
+                  <Text style={styles.activityLabel}>{option.label}</Text>
+                  <Text style={styles.activityDescription}>{option.description}</Text>
+                </View>
+                <View style={[styles.radio, goal === option.value && styles.selectedRadio]} />
+              </Pressable>
+            ))}
+          </View>
+          {target ? (
+            <Text style={styles.subtitle}>
+              Daily target: {target.dailyTarget} kcal{'\n'}Range: {target.bufferRange.min}–
+              {target.bufferRange.max} kcal (±100)
+            </Text>
+          ) : null}
+          {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !goal || isSaving }}
+            disabled={!goal || isSaving}
+            onPress={() => void handleSaveGoal()}
+            style={[styles.continueButton, (!goal || isSaving) && styles.disabledButton]}
+          >
+            <Text style={styles.continueText}>{isSaving ? 'Saving…' : 'Save goal & continue'}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSaving}
+            onPress={() => {
+              setStats(null);
+              setErrorMessage('');
+            }}
+            style={styles.backButton}
+          >
+            <Text style={styles.choiceText}>Back to stats</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
@@ -85,7 +168,7 @@ export function OnboardingScreen({ onProfileSaved }: OnboardingScreenProps) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.eyebrow}>CALFIT</Text>
+          <Text style={styles.eyebrow}>CALFIT · STEP 1 OF 2</Text>
           <Text style={styles.title}>Let’s calculate your daily target</Text>
           <Text style={styles.subtitle}>
             Enter a few details to estimate your BMI and maintenance calories.
@@ -156,7 +239,7 @@ export function OnboardingScreen({ onProfileSaved }: OnboardingScreenProps) {
               isSaving && styles.disabledButton,
             ]}
           >
-            <Text style={styles.continueText}>{isSaving ? 'Saving…' : 'Calculate & continue'}</Text>
+            <Text style={styles.continueText}>Continue to goal</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -262,5 +345,6 @@ const styles = StyleSheet.create({
   },
   pressedButton: { opacity: 0.85 },
   disabledButton: { opacity: 0.6 },
+  backButton: { alignItems: 'center', paddingVertical: 18 },
   continueText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 });

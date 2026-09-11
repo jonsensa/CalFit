@@ -5,10 +5,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { loadUserProfile } from './src/storage/userProfileStorage';
-import type { UserProfile } from './src/types/userProfile';
+import type { ProfileStats } from './src/types/userProfile';
 
 export default function App() {
-  const [userProfile, setUserProfile] = useState<UserProfile | null>();
+  const [userProfile, setUserProfile] = useState<ProfileStats | null>();
 
   useEffect(() => {
     void loadUserProfile().then(setUserProfile);

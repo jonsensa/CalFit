@@ -1,19 +1,32 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { UserProfile } from '../types/userProfile';
+import { GOALS, type UserProfile } from '../types/userProfile';
 
 type HomeScreenProps = { userProfile: UserProfile };
 
 export function HomeScreen({ userProfile }: HomeScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.eyebrow}>YOUR DAILY BASELINE</Text>
         <Text style={styles.title}>Welcome to CalFit</Text>
         <Text style={styles.subtitle}>
           Your saved estimates are ready whenever you reopen the app.
         </Text>
+
+        <View style={styles.card}>
+          <Text style={styles.metricLabel}>
+            {GOALS.find((goal) => goal.value === userProfile.goal)?.label} · Daily target
+          </Text>
+          <View style={styles.calorieRow}>
+            <Text style={styles.metricValue}>{userProfile.dailyTarget}</Text>
+            <Text style={styles.unit}>kcal/day</Text>
+          </View>
+          <Text style={styles.note}>
+            Range: {userProfile.bufferRange.min}–{userProfile.bufferRange.max} kcal (±100)
+          </Text>
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.metricLabel}>BMI</Text>
@@ -32,14 +45,14 @@ export function HomeScreen({ userProfile }: HomeScreenProps) {
           These numbers are estimates based on the Mifflin–St Jeor equation and your selected
           activity level.
         </Text>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#f8fafc' },
-  container: { flex: 1, padding: 24 },
+  container: { padding: 24, paddingBottom: 40 },
   eyebrow: {
     marginTop: 20,
     color: '#2563eb',

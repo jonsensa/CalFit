@@ -1,6 +1,6 @@
 # calorie-tracker
 
-Iteration 0: Expo, React Native, TypeScript, and two blank React Navigation screens.
+Iteration 2: stats entry, goal selection, and saved daily calorie targets.
 
 ## Run on your phone
 
@@ -10,8 +10,11 @@ Iteration 0: Expo, React Native, TypeScript, and two blank React Navigation scre
 4. Connect your computer and phone to the same Wi-Fi and scan the terminal QR code
    with Expo Go (Android) or the Camera app (iOS).
 
-The app opens to a blank white Onboarding screen. Home is registered for future
-navigation; there are intentionally no buttons or forms yet.
+Enter your stats, then choose Lose weight (maintenance − 500), Gain weight
+(maintenance + 300), or Just track (maintenance). Home shows the daily target,
+its ±100-calorie range, BMI, and maintenance calories. The profile is saved locally
+and restored on reopening. Profiles saved before goal selection was added open
+at the goal step with their existing stats preserved.
 
 On Windows, if the PowerShell npm/npx launcher reports a missing `npm-cli.js`, use
 `npm.cmd install` and `npx.cmd expo start` instead.
@@ -22,6 +25,7 @@ On Windows, if the PowerShell npm/npx launcher reports a missing `npm-cli.js`, u
 npm run typecheck
 npm run lint
 npm run format:check
+node --test tests/userProfile.test.cjs
 ```
 
 Run `npm run format` to apply formatting.

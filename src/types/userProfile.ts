@@ -28,7 +28,25 @@ export const ACTIVITY_LEVELS = [
 export type ActivityLevel = (typeof ACTIVITY_LEVELS)[number]['value'];
 export type Sex = 'male' | 'female';
 
-export type UserProfile = {
+export const GOALS = [
+  {
+    value: 'loseWeight',
+    label: 'Lose weight',
+    adjustment: -500,
+    description: 'Maintenance − 500 calories',
+  },
+  {
+    value: 'gainWeight',
+    label: 'Gain weight',
+    adjustment: 300,
+    description: 'Maintenance + 300 calories',
+  },
+  { value: 'justTrack', label: 'Just track', adjustment: 0, description: 'Same as maintenance' },
+] as const;
+
+export type Goal = (typeof GOALS)[number]['value'];
+
+export type ProfileStats = {
   age: number;
   heightCm: number;
   weightKg: number;
@@ -37,6 +55,31 @@ export type UserProfile = {
   bmi: number;
   maintenanceCalories: number;
 };
+
+export type UserProfile = ProfileStats & {
+  goal: Goal;
+  dailyTarget: number;
+  bufferRange: { min: number; max: number };
+};
+
+export function hasGoal(profile: ProfileStats): profile is UserProfile {
+  const saved = profile as Partial<UserProfile>;
+  return (
+    GOALS.some((goal) => goal.value === saved.goal) &&
+    Number.isFinite(saved.dailyTarget) &&
+    Number.isFinite(saved.bufferRange?.min) &&
+    Number.isFinite(saved.bufferRange?.max)
+  );
+}
+
+export function calculateGoalTarget(
+  maintenanceCalories: number,
+  goal: Goal,
+): Pick<UserProfile, 'goal' | 'dailyTarget' | 'bufferRange'> {
+  const dailyTarget =
+    maintenanceCalories + GOALS.find((option) => option.value === goal)!.adjustment;
+  return { goal, dailyTarget, bufferRange: { min: dailyTarget - 100, max: dailyTarget + 100 } };
+}
 
 type HealthMetricInputs = Pick<
   UserProfile,
