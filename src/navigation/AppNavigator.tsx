@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { HomeScreen } from '../screens/HomeScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
+import type { UserProfile } from '../types/userProfile';
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -11,15 +12,22 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export function AppNavigator() {
+type AppNavigatorProps = {
+  userProfile: UserProfile | null;
+  onProfileSaved: (profile: UserProfile) => void;
+};
+
+export function AppNavigator({ userProfile, onProfileSaved }: AppNavigatorProps) {
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Onboarding"
-        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#fff' } }}
-      >
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {userProfile ? (
+          <Stack.Screen name="Home">{() => <HomeScreen userProfile={userProfile} />}</Stack.Screen>
+        ) : (
+          <Stack.Screen name="Onboarding">
+            {() => <OnboardingScreen onProfileSaved={onProfileSaved} />}
+          </Stack.Screen>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
